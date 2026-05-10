@@ -1,7 +1,7 @@
 # handle visual representation of the game board 
 import pygame
 from Constants import *
-from Board import Board, PlayerId, Position, MoveResult,Wall, WallOrientation
+from Board import Board, PlayerId, Position, MoveResult, Wall, WallOrientation
 from controller import GameController
 
 class GameScreen:
@@ -9,32 +9,33 @@ class GameScreen:
     def __init__(self, screen): #constructor to initialize game screen
         self.screen = screen
         self.controller = GameController() 
-        self.board = self.controller.board
-        self.font = pygame.font.SysFont("Arial", 20,bold=True) 
-        self.big_font = pygame.font.SysFont("Arial", 40, bold=True)
+        self.board = self.controller.board #instance from class Board
+        self.font = pygame.font.SysFont("Arial", 20,bold=True) #for showing no.walls, turn info, win info, restart (status messages)
+        self.big_font = pygame.font.SysFont("Arial", 40, bold=True) #for showing turn and win info
         self.selected = False #flag to indicate if a pawn selected
         self.valid_moves = [] #list of positions for valid moves
-        self.status_message = ""
-        self.mode = "move"          
-        self.wall_preview = None 
-        self.btn_move = pygame.Rect(BOARD_PIXEL_SIZE + 20, 100, 120, 40) #button for move mode
-        self.btn_wall = pygame.Rect(BOARD_PIXEL_SIZE + 20, 160, 120, 40) #button for wall mode
+        self.status_message = "" #at bottom to show turn info, invalid moves, guide info
+        self.mode = "move" #default move pawn 
+        self.wall_preview = None #only if mode is wall
+        self.btn_move = pygame.Rect(BOARD_PIXEL_SIZE + 20, 100, 120, 40) #button for move pawn  (x,y,w,h)
+        self.btn_wall = pygame.Rect(BOARD_PIXEL_SIZE + 20, 160, 120, 40) #button for place wall 
 
-    def draw(self):
+    def draw(self): #draw entire game screen elements
         self.screen.fill(COLORS["background"])
-        self.draw_grid()
-        self.draw_mode_buttons()
-        self.draw_highlights()
-        self.draw_pawns()
-        self.draw_ui()
-        self.draw_walls()
-        self.draw_wall_preview()
-        pygame.display.flip() #update the full display surface to the screen
+        self.draw_grid() #9*9
+        self.draw_mode_buttons() #switch bet wall and pawn
+        self.draw_highlights() #highlight valid moves 
+        self.draw_pawns() #player pawns 
+        self.draw_ui() #status messages
+        self.draw_walls() #placed walls
+        self.draw_wall_preview() #hovering near edge for preview
+        pygame.display.update() #update the full display surface to the screen
     
     def draw_grid(self): #loop through each row and column to draw cells
         for row in range(BOARD_SIZE): 
             for col in range(BOARD_SIZE):
                 #calculate x, y position for each cell 
+                #we can use margin for offset later :D
                 x = col * CELL_SIZE
                 y = row * CELL_SIZE
                 #rectangle object for the current cell
@@ -47,18 +48,18 @@ class GameScreen:
         for player, color in [(PlayerId.PLAYER_1, COLORS["player1"]),(PlayerId.PLAYER_2, COLORS["player2"])]:
             pos = self.board.get_player_position(player) #get current position of the player's pawn
             x, y = self.cell_to_pixel(pos.row, pos.col)
-            pygame.draw.circle(self.screen, color, (x, y), radius) #draw the pawn as a circle
+            pygame.draw.circle(self.screen, color, (x, y), radius) #draw the pawn as a circle (surface, color, center, radius,thick)
             pygame.draw.circle(self.screen, (255, 255, 255), (x, y), radius, 2) #white outline 
             if self.selected and player == self.controller.current_player():
-                pygame.draw.circle(self.screen, (255, 255, 0), (x, y), radius + 4, 3)  #draw ring around selected pawn
+                pygame.draw.circle(self.screen, (255, 255, 0), (x, y), radius + 4, 3) #draw ring around selected pawn
 
     def draw_highlights(self):
-        highlight_surf = pygame.Surface((CELL_SIZE - 4, CELL_SIZE - 4), pygame.SRCALPHA) 
+       for pos in self.valid_moves:
+        x = pos.col * CELL_SIZE
+        y = pos.row * CELL_SIZE
+        highlight_surf = pygame.Surface((CELL_SIZE, CELL_SIZE), pygame.SRCALPHA) #(width, height, flag for transparency)
         highlight_surf.fill(COLORS["highlight"])
-        for pos in self.valid_moves:
-            x = pos.col * CELL_SIZE + 2
-            y = pos.row * CELL_SIZE + 2
-            self.screen.blit(highlight_surf, (x, y))
+        self.screen.blit(highlight_surf, (x, y))
 
     def draw_ui(self):
         p1_walls = self.board.get_player_wall_count(PlayerId.PLAYER_1)
@@ -67,7 +68,7 @@ class GameScreen:
         p1_text = self.font.render(f"Player 1 Walls: {p1_walls}", True, COLORS["player1"])
         p2_text = self.font.render(f"Player 2 Walls: {p2_walls}", True, COLORS["player2"])
 
-        self.screen.blit(p1_text, (10, BOARD_PIXEL_SIZE + 10))
+        self.screen.blit(p1_text, (10, BOARD_PIXEL_SIZE + 10)) #distance from left, bottom
         self.screen.blit(p2_text, (10, BOARD_PIXEL_SIZE + 40))
 
         if not self.controller.game_over():
@@ -94,12 +95,12 @@ class GameScreen:
             self.screen.blit(restart_text, restart_text.get_rect(center=(400, 370))) #center restart text
 
     def draw_mode_buttons(self):
-        move_color = (80,160,80) if self.mode == "move" else (60,60,60)
+        move_color = (80,160,80) if self.mode == "move" else (60,60,60) #switch color bet green and gray
         pygame.draw.rect(self.screen, move_color, self.btn_move, border_radius=5)
-        move_text = self.font.render("Move Pawn", True, (255, 255, 255))
+        move_text = self.font.render("Move Pawn", True, (255, 255, 255)) 
         self.screen.blit(move_text, move_text.get_rect(center=self.btn_move.center))
 
-        wall_color = (160, 100,40) if self.mode == "wall" else (60, 60, 60)
+        wall_color = (160, 100,40) if self.mode == "wall" else (60, 60, 60) #switch color bet orange and gray
         pygame.draw.rect(self.screen, wall_color, self.btn_wall, border_radius=5)
         wall_text = self.font.render("Place Wall", True, (255, 255, 255))
         self.screen.blit(wall_text, wall_text.get_rect(center=self.btn_wall.center))
@@ -122,20 +123,20 @@ class GameScreen:
             pygame.draw.rect(self.screen, COLORS["wall"], rect, border_radius=3)
     
     def get_wall_from_mouse(self, mouse_pos):
-        mx, my = mouse_pos
-        if not (0 <= mx < BOARD_PIXEL_SIZE and 0 <= my < BOARD_PIXEL_SIZE):
+        mx, my = mouse_pos #pixel coordinates of mouse click
+        if not (0 <= mx < BOARD_PIXEL_SIZE and 0 <= my < BOARD_PIXEL_SIZE): #mouse outside board
             return None
+        
         col = mx // CELL_SIZE
         row = my // CELL_SIZE
-
-        rx= mx % CELL_SIZE
-        ry = my % CELL_SIZE
+        rx= mx % CELL_SIZE #how far from left edge of cell
+        ry = my % CELL_SIZE #how far from top edge of cell
         threshold = 15
 
-        if ry > CELL_SIZE - threshold and row < BOARD_SIZE -1 and col < BOARD_SIZE -1:
+        if ry > CELL_SIZE - threshold and row < BOARD_SIZE -1 and col < BOARD_SIZE -1: #near bottom edge of cell and not on last row/col
             return Wall(top_left=Position(row, col), orientation=WallOrientation.HORIZONTAL)
         
-        if rx > CELL_SIZE - threshold and col < BOARD_SIZE -1 and row < BOARD_SIZE -1:
+        if rx > CELL_SIZE - threshold and col < BOARD_SIZE -1 and row < BOARD_SIZE -1: #near right edge of cell and not on last row/col
             return Wall(top_left=Position(row, col), orientation=WallOrientation.VERTICAL)
         return None
     
@@ -171,7 +172,7 @@ class GameScreen:
     
     def handle_click(self, mouse_pos):
         if self.controller.game_over():
-            return #ignore clicks if game is over
+            return #ignore clicks if game ended
         
         if self.btn_move.collidepoint(mouse_pos):
             self.mode = "move"
@@ -208,6 +209,7 @@ class GameScreen:
         clicked = self.pixel_to_cell(mouse_pos) #convert pixel position to board cell
         if clicked is None:
             return #click outside the board
+        
         row,col = clicked
         clicked_pos = Position(row, col)
         current = self.controller.current_player() #get current player
@@ -242,12 +244,12 @@ class GameScreen:
             elif result == MoveResult.INVALID_MOVE:
                 self.status_message = "Invalid move! Try again"
     
-    def cell_to_pixel(self, row, col):
+    def cell_to_pixel(self, row, col): #convert from board coordinates to screen pixel coordinates 
         x = col * CELL_SIZE + CELL_SIZE // 2
         y = row * CELL_SIZE + CELL_SIZE // 2
         return x, y
     
-    def pixel_to_cell(self, pos):
+    def pixel_to_cell(self, pos): #convert from screen pixel coordinates to board coordinates 
         x, y = pos
         if 0 <= x < BOARD_PIXEL_SIZE and 0 <= y < BOARD_PIXEL_SIZE:
             col = x // CELL_SIZE
