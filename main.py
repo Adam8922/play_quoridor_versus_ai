@@ -18,8 +18,8 @@ while running:
             if event.key == pygame.K_r: #reset game when R pressed
                 game_screen = GameScreen(screen)
         game_screen.handle_event(event) #pass event to game screen for processing
-    game_screen.draw() #redraw game screen after handling event
 
+    game_screen.draw() #redraw game screen after handling event
 
     clock.tick(60) #limit frame rate to 60 frames per second 
 pygame.quit()
