@@ -1,7 +1,7 @@
 from collections import deque
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 # --- Enums ---
 class PlayerId(Enum):
@@ -360,64 +360,73 @@ class Board:
         else:
             # Player 2 moves DOWN to reach Row 8
             return self._p2_pos.row == (self.BOARD_SIZE - 1)
+        
     def get_shortest_path(self, player: PlayerId) -> List[Position]:
         """
-        Uses BFS with a 'came_from' dictionary to find and return the 
-        exact shortest path to the goal. 
-        Returns an empty list [] if the player is trapped.
+        Finds the shortest path to the goal line using Breadth-First Search (BFS).
+        Considers full Quoridor movement rules:
+        - Standard moves
+        - Pawn jumps (when adjacent)
+        - Diagonal moves (when jumping is blocked by a wall)
+        Uses the engine's internal validation logic via get_valid_pawn_moves.
         """
+
+        # Identify the starting position and the target goal row for the given player
         start_pos = self.get_player_position(player)
-        
-        # 1. Define the target row
         goal_row = 0 if player == PlayerId.PLAYER_1 else (self.BOARD_SIZE - 1)
 
+        from collections import deque
+
+        # Initialize the BFS queue with the starting position
         queue = deque([start_pos])
-        
-        # 2. The Breadcrumb Dictionary (The "Memory")
-        # Format: { (Current_Row, Current_Col) : (Parent_Row, Parent_Col) }
         start_tuple = (start_pos.row, start_pos.col)
-        came_from = {start_tuple: None} # The start position has no parent
+
+        # Dictionary to track the path: maps a child position back to its parent
+        came_from: Dict[tuple, Optional[tuple]] = {start_tuple: None}
 
         while queue:
             current = queue.popleft()
+            curr_tuple = (current.row, current.col)
 
-            # 3. GOAL REACHED! Time to trace the breadcrumbs backward.
+            # Check if the current position reached the target goal row
             if current.row == goal_row:
                 path = []
-                curr_tuple = (current.row, current.col)
-                
-                # Walk backward until we hit 'None' (which is the start position)
+                # Backtrack from the goal to the start using the came_from map
                 while curr_tuple is not None:
                     path.append(Position(curr_tuple[0], curr_tuple[1]))
                     curr_tuple = came_from[curr_tuple]
-                    
-                # The path was built backwards (Goal -> Start). 
-                # Reverse it so it goes Start -> Goal.
-                path.reverse() 
+
+                # Reverse the list to get the path from start to goal
+                path.reverse()
                 return path
 
-            # 4. Standard BFS Expansion
-            directions = [
-                Position(current.row - 1, current.col), # UP
-                Position(current.row + 1, current.col), # DOWN
-                Position(current.row, current.col - 1), # LEFT
-                Position(current.row, current.col + 1)  # RIGHT
-            ]
+            # Save the player's actual position on the real board
+            original_pos = self.get_player_position(player)
 
-            for target in directions:
-                if target.row < 0 or target.row >= self.BOARD_SIZE: continue
-                if target.col < 0 or target.col >= self.BOARD_SIZE: continue
-                if self._is_wall_blocking(current, target): continue
+            # Temporarily teleport the player to the 'current' BFS node
+            if player == PlayerId.PLAYER_1:
+                self._p1_pos = current
+            else:
+                self._p2_pos = current
 
-                target_tuple = (target.row, target.col)
-                
-                # If we haven't visited this square yet...
-                if target_tuple not in came_from:
-                    # Drop a breadcrumb pointing back to 'current'
-                    came_from[target_tuple] = (current.row, current.col)
-                    queue.append(target)
+            # Fetch all legal moves (including jumps and diagonals) from this position
+            valid_moves = self.get_valid_pawn_moves(player)
 
-        # If the queue empties and we never found the goal, they are trapped.
+            # Restore the player's original position to maintain board integrity
+            if player == PlayerId.PLAYER_1:
+                self._p1_pos = original_pos
+            else:
+                self._p2_pos = original_pos
+
+            # BFS Expansion: Iterate through all valid neighboring moves
+            for next_pos in valid_moves:
+                next_tuple = (next_pos.row, next_pos.col)
+
+                if next_tuple not in came_from:
+                    came_from[next_tuple] = curr_tuple
+                    queue.append(next_pos)
+
+        # Return an empty list if no valid path exists
         return []
 
     # --- Getters for the View / Controller ---
