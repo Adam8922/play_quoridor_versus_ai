@@ -371,12 +371,17 @@ class Board:
 
             abs_r, abs_c = abs(dr), abs(dc)
 
-            # Normal move
-            if abs_r + abs_c == 1 and target != opponent_pos:
-                if not self._is_wall_blocking(pos, target):
+            # Normal move — opponent square is not a valid landing spot,
+            # but it is NOT a wall. The BFS must be able to "pass through"
+            # the opponent conceptually, so we only skip adding it as a
+            # destination. Jump logic below handles moves over/around them.
+            if abs_r + abs_c == 1:
+                if target == opponent_pos:
+                    pass  # Can't land here; jump logic handles it below
+                elif not self._is_wall_blocking(pos, target):
                     valid.append(target)
 
-            elif opp_adjacent:
+            if opp_adjacent:
                 # Straight jump
                 if (abs_r == 2 and dc == 0) or (abs_c == 2 and dr == 0):
                     mid = Position(pos.row + dr // 2, pos.col + dc // 2)
