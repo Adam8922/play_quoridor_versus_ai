@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Tuple
 from Board import Board, PlayerId, Position, Wall, WallOrientation
 
 
-class ai:
+class AIPlayer:
     """
     AI opponent for Quoridor with three difficulty levels.
 
