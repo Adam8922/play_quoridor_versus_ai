@@ -10,10 +10,10 @@ class GameController:
     def current_player(self):       
         return self._current_player
 
-    def game_over(self):              
+    def game_over(self): #indicate whether game ended             
         return self._game_over
 
-    def winner(self):
+    def winner(self): #return the winner if game ended
         return self._winner
 
     def switch_turn(self):
@@ -22,7 +22,7 @@ class GameController:
         else:
             self._current_player = PlayerId.PLAYER_1
 
-    def make_move(self, new_pos):        
+    def make_move(self, new_pos): #make a move and check victory    
         result = self.board.move_pawn(self._current_player, new_pos)
         if result == MoveResult.VICTORY:
             self._game_over = True
