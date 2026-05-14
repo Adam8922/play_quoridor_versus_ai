@@ -234,11 +234,9 @@ class GameScreen:
             self.valid_moves = [] #clear valid moves
 
             if result == MoveResult.SUCCESS:
-               self.status_message = f"Player {'1' if self.controller.current_player() ==
-                                                PlayerId.PLAYER_1 else '2'}'s turn"
+                self.status_message = f"Player {'1' if self.controller.current_player() == PlayerId.PLAYER_1 else '2'}'s turn"
             elif result == MoveResult.VICTORY:
-                self.status_message = f"Player {'1' if self.controller.current_player() ==
-                                                PlayerId.PLAYER_1 else '2'} wins!"
+                self.status_message = f"Player {'1' if self.controller.current_player() == PlayerId.PLAYER_1 else '2'} wins!"
             elif result == MoveResult.INVALID_MOVE:
                 self.status_message = "Invalid move! Try again"
     
@@ -254,6 +252,31 @@ class GameScreen:
             row = y // CELL_SIZE
             return int(row), int(col)
         return None
-            
 
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode((800, 700))
+    pygame.display.set_caption("Quoridor")
+    game_screen = GameScreen(screen)
+    clock = pygame.time.Clock()
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            game_screen.handle_event(event)
             
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    game_screen.controller = GameController()
+                    game_screen.board = game_screen.controller.board
+                    game_screen.selected = False
+                    game_screen.valid_moves = []
+                    game_screen.status_message = "Game Restarted"
+                    game_screen.mode = "move"
+
+        game_screen.draw()
+        clock.tick(60)
+
+    pygame.quit()
