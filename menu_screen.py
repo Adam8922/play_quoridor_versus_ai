@@ -14,7 +14,7 @@ class MenuScreen:
         # buttons for game modes
         btn_width = 250
         btn_height = 50
-        center_x = 400 - btn_width // 2  # center of 800px window
+        center_x = WINDOW_WIDTH // 2 - btn_width // 2
 
         self.btn_2players = pygame.Rect(center_x, 250, btn_width, btn_height)
         self.btn_easy = pygame.Rect(center_x, 340, btn_width, btn_height)
@@ -26,11 +26,11 @@ class MenuScreen:
 
         # title
         title = self.title_font.render("Quoridor", True, COLORS["ui_text"])
-        self.screen.blit(title, title.get_rect(center=(400, 100)))
+        self.screen.blit(title, title.get_rect(center=(WINDOW_WIDTH // 2, 100)))
 
         # subtitle
         subtitle = self.small_font.render("Choose Game Mode", True, COLORS["ui_text"])
-        self.screen.blit(subtitle, subtitle.get_rect(center=(400, 170)))
+        self.screen.blit(subtitle, subtitle.get_rect(center=(WINDOW_WIDTH // 2, 170)))
 
         # 2 players button
         pygame.draw.rect(self.screen, (80, 160, 80), self.btn_2players, border_radius=8)
@@ -39,7 +39,7 @@ class MenuScreen:
 
         # AI section label
         label = self.small_font.render("1 Player (vs AI)", True, COLORS["ui_text"])
-        self.screen.blit(label, label.get_rect(center=(400, 320)))
+        self.screen.blit(label, label.get_rect(center=(WINDOW_WIDTH // 2, 320)))
 
         # easy button
         pygame.draw.rect(self.screen, (60, 120, 60), self.btn_easy, border_radius=8)

@@ -99,8 +99,8 @@ class GameScreen:
             turn_text = self.big_font.render(f"Player {turn_num}'s Turn", True, turn_color)
             # Add a small shadow/glow to turn text
             shadow = self.big_font.render(f"Player {turn_num}'s Turn", True, (0, 0, 0))
-            self.screen.blit(shadow, (BOARD_PIXEL_SIZE // 2 - turn_text.get_width() // 2 + 2, BOARD_PIXEL_SIZE + 17))
-            self.screen.blit(turn_text, (BOARD_PIXEL_SIZE // 2 - turn_text.get_width() // 2, BOARD_PIXEL_SIZE + 15))
+            self.screen.blit(shadow, (WINDOW_WIDTH // 2 - turn_text.get_width() // 2 + 2, BOARD_PIXEL_SIZE + 17))
+            self.screen.blit(turn_text, (WINDOW_WIDTH // 2 - turn_text.get_width() // 2, BOARD_PIXEL_SIZE + 15))
 
         # Draw wall counts side-by-side in the middle
         p1_undo = self.board.p1_undo_count
@@ -108,16 +108,16 @@ class GameScreen:
         
         p1_text = self.font.render(f"P1 Walls: {p1_walls} (Undo: {p1_undo})", True, COLORS["player1"])
         p2_text = self.font.render(f"P2 Walls: {p2_walls} (Undo: {p2_undo})", True, COLORS["player2"])
-        self.screen.blit(p1_text, (40, BOARD_PIXEL_SIZE + 75))
-        self.screen.blit(p2_text, (BOARD_PIXEL_SIZE - p2_text.get_width() - 40, BOARD_PIXEL_SIZE + 75))
+        self.screen.blit(p1_text, (20, BOARD_PIXEL_SIZE + 75))
+        self.screen.blit(p2_text, (WINDOW_WIDTH - p2_text.get_width() - 20, BOARD_PIXEL_SIZE + 75))
         
         # Draw status messages at the bottom
         if self.status_message:
             msg = self.font.render(self.status_message, True, COLORS["ui_text"])
-            self.screen.blit(msg, (BOARD_PIXEL_SIZE // 2 - msg.get_width() // 2, BOARD_PIXEL_SIZE + 115))
+            self.screen.blit(msg, (WINDOW_WIDTH // 2 - msg.get_width() // 2, BOARD_PIXEL_SIZE + 115))
 
         if self.controller.game_over():
-            overlay = pygame.Surface((800,700), pygame.SRCALPHA)
+            overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180)) #semi-transparent black background 
             self.screen.blit(overlay, (0, 0))
             
@@ -126,8 +126,8 @@ class GameScreen:
             winner_text = self.big_font.render(f"Player {winner_num} Wins!", True, winner_color)
             restart_text = self.font.render("Click R to restart", True, (255, 255, 255))
 
-            self.screen.blit(winner_text, winner_text.get_rect(center=(400, 300))) #center winner text
-            self.screen.blit(restart_text, restart_text.get_rect(center=(400, 370))) #center restart text
+            self.screen.blit(winner_text, winner_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))) #center winner text
+            self.screen.blit(restart_text, restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))) #center restart text
 
     def draw_mode_buttons(self):
         move_color = (80,160,80) if self.mode == "move" else (60,60,60) #switch color bet green and gray

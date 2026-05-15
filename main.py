@@ -3,8 +3,9 @@ import pygame
 from game_screen import GameScreen #custom game screen class 
 from menu_screen import MenuScreen #menu screen for mode selection
 
+from Constants import *
 pygame.init() #initialize pygame
-screen = pygame.display.set_mode((800, 700)) #set width & height 
+screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT)) #set width & height 
 pygame.display.set_caption("Quoridor Game") #set window title
 clock = pygame.time.Clock() #create clock object to control frame rate
 

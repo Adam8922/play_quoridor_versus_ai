@@ -1,9 +1,11 @@
 BOARD_SIZE = 9 #no of cells
-CELL_SIZE = 60 #width, height of each cell 
+CELL_SIZE = 50 #width, height of each cell 
 WALL_THICKNESS = 4 #width of gaps where walls will be placed 
 MARGIN = 40 #offsset from the window edge 
 
 BOARD_PIXEL_SIZE = BOARD_SIZE * CELL_SIZE #total size of grid
+WINDOW_WIDTH = BOARD_PIXEL_SIZE + 200
+WINDOW_HEIGHT = BOARD_PIXEL_SIZE + 150
 
 COLORS = {
     "background":  (13, 17, 23),    # Deep space black/blue
