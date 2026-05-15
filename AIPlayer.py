@@ -10,7 +10,7 @@ class AIPlayer:
     """
     AI opponent for Quoridor with three difficulty levels.
 
-    Easy   — picks a random legal move.
+    Easy   — lazy greedy: moves toward goal, occasionally drops a random wall.
     Medium — greedy: advance if winning, otherwise place the most blocking wall.
     Hard   — depth-3 minimax with alpha-beta pruning.
 
@@ -94,16 +94,26 @@ class AIPlayer:
     # =========================================================================
 
     def _easy_move(self, board: Board, player: PlayerId):
+        """
+        'Lazy Greedy' — usually moves toward the goal, 
+        occasionally drops a random wall near the opponent.
+        """
+        my_path = self.get_shortest_path_with_pawns(board, player)
+        opponent = self._opponent(player)
+
+        # 20% chance to place a wall if they have any
+        if random.random() < 0.2 and board.get_player_wall_count(player) > 0:
+            candidates = self._wall_candidates(board, opponent)
+            valid_candidates = [w for w in candidates if board.is_valid_wall_placement(player, w)]
+            if valid_candidates:
+                return ("wall", random.choice(valid_candidates))
+
+        # Otherwise, just move toward the goal
+        if my_path and len(my_path) > 1:
+            return ("move", my_path[1])
+        
+        # Fallback to random if no path found (shouldn't happen)
         moves = [("move", p) for p in board.get_valid_pawn_moves(player)]
-
-        if board.get_player_wall_count(player) > 0:
-            for r in range(8):
-                for c in range(8):
-                    for orientation in WallOrientation:
-                        wall = Wall(Position(r, c), orientation)
-                        if board.is_valid_wall_placement(wall):
-                            moves.append(("wall", wall))
-
         return random.choice(moves) if moves else None
 
     # =========================================================================
@@ -128,7 +138,7 @@ class AIPlayer:
 
         if board.get_player_wall_count(player) > 0:
             for wall in self._wall_candidates(board, opponent):
-                if not board.is_valid_wall_placement(wall):
+                if not board.is_valid_wall_placement(player, wall):
                     continue
 
                 # Simulate without a full deepcopy — add, measure, remove
@@ -161,10 +171,10 @@ class AIPlayer:
         alpha = float("-inf")
         beta  = float("inf")
 
-        for move in self._candidate_moves(board, player):
+        for move in self._candidate_moves(board, player, max_walls=20):
             child = copy.deepcopy(board)
             self._apply_move(child, player, move)
-            score = self._minimax(child, depth=2, is_max=False,
+            score = self._minimax(child, depth=3, is_max=False,
                                   ai_player=player, alpha=alpha, beta=beta)
             if score > best_score:
                 best_score = score
@@ -238,8 +248,8 @@ class AIPlayer:
     # Move generation
     # =========================================================================
 
-    def _candidate_moves(self, board: Board, player: PlayerId) -> list:
-        """Ordered candidate moves: path-advancing pawn moves first, then walls."""
+    def _candidate_moves(self, board: Board, player: PlayerId, max_walls=20) -> list:
+        """Ordered candidate moves: path-advancing pawn moves first, then best walls."""
         opponent = self._opponent(player)
         moves = []
 
@@ -251,30 +261,51 @@ class AIPlayer:
         pawn_moves.sort(key=lambda p: (0 if (p.row, p.col) in path_set else 1))
         moves.extend(("move", p) for p in pawn_moves)
 
+        # Only add the top N wall candidates to keep search fast
         if board.get_player_wall_count(player) > 0:
+            valid_walls = []
             for wall in self._wall_candidates(board, opponent):
-                if board.is_valid_wall_placement(wall):
-                    moves.append(("wall", wall))
+                if board.is_valid_wall_placement(player, wall):
+                    valid_walls.append(wall)
+            
+            # score each wall by how much it lengthens opponent path
+            opp_path_len = len(self.get_shortest_path_with_pawns(board, opponent))
+            scored = []
+            # Increase heuristic check to 50 walls to find better options
+            for wall in valid_walls[:50]:  
+                board._add_wall_edges(wall)
+                new_opp = self.get_shortest_path_with_pawns(board, opponent)
+                board._remove_wall_edges(wall)
+                if new_opp:
+                    gain = len(new_opp) - opp_path_len
+                    scored.append((gain, wall))
+            
+            # sort by gain descending, take the best ones
+            scored.sort(key=lambda x: -x[0])
+            for gain, wall in scored[:max_walls]:
+                moves.append(("wall", wall))
 
         return moves
 
     def _wall_candidates(self, board: Board, opponent: PlayerId) -> List[Wall]:
         """
-        Returns walls near the opponent's (wall-graph) path.
-        The wall-graph path is sufficient here — we just need rough row proximity.
-        Both orientations are always tried (fixes the original vertical-wall bug).
+        Returns walls near the opponent's path.
+        Restored vision to 2 squares to capture long-range strategic blocks.
         """
-        opp_path = board.get_shortest_path(opponent)   # fast wall-graph path
+        opp_path = board.get_shortest_path(opponent)
         if not opp_path:
             return []
 
-        path_rows = {p.row for p in opp_path}
+        path_cells = {(p.row, p.col) for p in opp_path}
         candidates = []
         for r in range(8):
-            if not any(abs(r - pr) <= 2 for pr in path_rows):
-                continue
             for c in range(8):
-                for orientation in WallOrientation:    # both orientations, always
+                # Restored to 2 squares for better strategic depth
+                near_path = any(abs(r - pr) <= 2 and abs(c - pc) <= 2 
+                               for pr, pc in path_cells)
+                if not near_path:
+                    continue
+                for orientation in WallOrientation:
                     candidates.append(Wall(Position(r, c), orientation))
         return candidates
 

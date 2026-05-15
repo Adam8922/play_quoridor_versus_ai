@@ -6,12 +6,13 @@ MARGIN = 40 #offsset from the window edge
 BOARD_PIXEL_SIZE = BOARD_SIZE * CELL_SIZE #total size of grid
 
 COLORS = {
-    "background":  (30, 30, 30), #black 
-    "cell":        (240, 217, 181), #beige
-    "grid_line":   (180, 140, 100), #light brown
-    "player1":     (70, 130, 200), #blue
-    "player2":     (220, 80,  80), #red
-    "wall":        (80,  50,  20), #dark brown
-    "highlight":   (100, 220, 100, 120), #green with alpha for transparency [0-255]
-    "wall_preview":(200, 200, 50,  150), #yellow with alpha for transparency [0-255]
+    "background":  (13, 17, 23),    # Deep space black/blue
+    "cell":        (22, 27, 34),    # Dark slate
+    "grid_line":   (48, 54, 61),    # Subtle divider
+    "player1":     (56, 139, 253),  # Electric Blue
+    "player2":     (248, 81, 73),   # Neon Red
+    "wall":        (210, 153, 34),  # Neon Gold/Orange
+    "highlight":   (63, 185, 80, 100), # Neon Green (translucent)
+    "wall_preview":(210, 153, 34, 150), # Wall preview (translucent)
+    "ui_text":     (201, 209, 217), # Off-white for readability
 }

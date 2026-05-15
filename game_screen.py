@@ -1,14 +1,16 @@
 # handle visual representation of the game board 
 import pygame
+import threading
 from Constants import *
 from Board import Board, PlayerId, Position, MoveResult, Wall, WallOrientation
 from controller import GameController
 
 class GameScreen:
 
-    def __init__(self, screen): #constructor to initialize game screen
+    def __init__(self, screen, game_mode="2players"): #constructor to initialize game screen
         self.screen = screen
-        self.controller = GameController() 
+        self.game_mode = game_mode
+        self.controller = GameController(game_mode) 
         self.board = self.controller.board #instance from class Board
         self.font = pygame.font.SysFont("Arial", 20,bold=True) #for showing no.walls, turn info, win info, restart (status messages)
         self.big_font = pygame.font.SysFont("Arial", 40, bold=True) #for showing turn and win info
@@ -19,6 +21,10 @@ class GameScreen:
         self.wall_preview = None #only if mode is wall
         self.btn_move = pygame.Rect(BOARD_PIXEL_SIZE + 20, 100, 120, 40) #button for move pawn  (x,y,w,h)
         self.btn_wall = pygame.Rect(BOARD_PIXEL_SIZE + 20, 160, 120, 40) #button for place wall 
+        self.btn_undo = pygame.Rect(BOARD_PIXEL_SIZE + 20, 240, 120, 40) #button for undo
+        self.btn_redo = pygame.Rect(BOARD_PIXEL_SIZE + 20, 300, 120, 40) #button for redo
+        self.ai_delay = 0  # timer to delay AI move so player can see the board
+        self.ai_thinking = False  # flag to track if AI is computing in background
 
     def draw(self): #draw entire game screen elements
         self.screen.fill(COLORS["background"])
@@ -29,29 +35,50 @@ class GameScreen:
         self.draw_ui() #status messages
         self.draw_walls() #placed walls
         self.draw_wall_preview() #hovering near edge for preview
+        
+        # handle AI turn with a small delay
+        if self.controller.is_ai_turn() and not self.ai_thinking:
+            self.ai_delay += 1
+            if self.ai_delay > 30:  # wait ~0.5 seconds at 60fps
+                self.ai_thinking = True
+                self.status_message = "AI is thinking..."
+                # run AI in a background thread so the window doesn't freeze
+                thread = threading.Thread(target=self._run_ai_move)
+                thread.start()
+
         pygame.display.update() #update the full display surface to the screen
+
+    def _run_ai_move(self):
+        """runs in a background thread so the game doesn't freeze"""
+        self.controller.ai_turn()
+        self.ai_delay = 0
+        self.ai_thinking = False
+        if self.controller.game_over():
+            self.status_message = "AI wins!" if self.controller.winner() == PlayerId.PLAYER_2 else ""
+        else:
+            self.status_message = "Your turn"
     
     def draw_grid(self): #loop through each row and column to draw cells
         for row in range(BOARD_SIZE): 
             for col in range(BOARD_SIZE):
-                #calculate x, y position for each cell 
-                #we can use margin for offset later :D
-                x = col * CELL_SIZE
-                y = row * CELL_SIZE
-                #rectangle object for the current cell
-                rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE) #hz starting, vt starting, width, height
-                pygame.draw.rect(self.screen, COLORS["cell"], rect) #window drawing on, color, object
-                pygame.draw.rect(self.screen, COLORS["grid_line"], rect, 1) #1: line thickness
+                padding = 4
+                x = col * CELL_SIZE + padding
+                y = row * CELL_SIZE + padding
+                rect = pygame.Rect(x, y, CELL_SIZE - padding*2, CELL_SIZE - padding*2)
+                pygame.draw.rect(self.screen, COLORS["cell"], rect, border_radius=8)
     
-    def draw_pawns(self): #draw player pawns on the board
-        radius = CELL_SIZE // 2 - 8 #radius of the pawn circles
+    def draw_pawns(self): #draw player pawns with a simple clean look
+        radius = CELL_SIZE // 2 - 10
         for player, color in [(PlayerId.PLAYER_1, COLORS["player1"]),(PlayerId.PLAYER_2, COLORS["player2"])]:
-            pos = self.board.get_player_position(player) #get current position of the player's pawn
+            pos = self.board.get_player_position(player)
             x, y = self.cell_to_pixel(pos.row, pos.col)
-            pygame.draw.circle(self.screen, color, (x, y), radius) #draw the pawn as a circle (surface, color, center, radius,thick)
-            pygame.draw.circle(self.screen, (255, 255, 255), (x, y), radius, 2) #white outline 
+            
+            # Simple pawn with outline
+            pygame.draw.circle(self.screen, color, (x, y), radius)
+            pygame.draw.circle(self.screen, (255, 255, 255), (x, y), radius, 2)
+            
             if self.selected and player == self.controller.current_player():
-                pygame.draw.circle(self.screen, (255, 255, 0), (x, y), radius + 4, 3) #draw ring around selected pawn
+                pygame.draw.circle(self.screen, (255, 255, 255), (x, y), radius + 6, 2)
 
     def draw_highlights(self):
        for pos in self.valid_moves:
@@ -65,21 +92,29 @@ class GameScreen:
         p1_walls = self.board.get_player_wall_count(PlayerId.PLAYER_1)
         p2_walls = self.board.get_player_wall_count(PlayerId.PLAYER_2)
 
-        p1_text = self.font.render(f"Player 1 Walls: {p1_walls}", True, COLORS["player1"])
-        p2_text = self.font.render(f"Player 2 Walls: {p2_walls}", True, COLORS["player2"])
-
-        self.screen.blit(p1_text, (10, BOARD_PIXEL_SIZE + 10)) #distance from left, bottom
-        self.screen.blit(p2_text, (10, BOARD_PIXEL_SIZE + 40))
-
+        # Draw turn information at the top of the UI area
         if not self.controller.game_over():
             turn_num = "1" if self.controller.current_player() == PlayerId.PLAYER_1 else "2"
             turn_color = COLORS["player1"] if turn_num == "1" else COLORS["player2"]
             turn_text = self.big_font.render(f"Player {turn_num}'s Turn", True, turn_color)
-            self.screen.blit(turn_text, (BOARD_PIXEL_SIZE // 2 - turn_text.get_width() // 2, BOARD_PIXEL_SIZE + 10))
+            # Add a small shadow/glow to turn text
+            shadow = self.big_font.render(f"Player {turn_num}'s Turn", True, (0, 0, 0))
+            self.screen.blit(shadow, (BOARD_PIXEL_SIZE // 2 - turn_text.get_width() // 2 + 2, BOARD_PIXEL_SIZE + 17))
+            self.screen.blit(turn_text, (BOARD_PIXEL_SIZE // 2 - turn_text.get_width() // 2, BOARD_PIXEL_SIZE + 15))
+
+        # Draw wall counts side-by-side in the middle
+        p1_undo = self.board.p1_undo_count
+        p2_undo = self.board.p2_undo_count
         
+        p1_text = self.font.render(f"P1 Walls: {p1_walls} (Undo: {p1_undo})", True, COLORS["player1"])
+        p2_text = self.font.render(f"P2 Walls: {p2_walls} (Undo: {p2_undo})", True, COLORS["player2"])
+        self.screen.blit(p1_text, (40, BOARD_PIXEL_SIZE + 75))
+        self.screen.blit(p2_text, (BOARD_PIXEL_SIZE - p2_text.get_width() - 40, BOARD_PIXEL_SIZE + 75))
+        
+        # Draw status messages at the bottom
         if self.status_message:
-            msg = self.font.render(self.status_message, True, (255, 255, 255))
-            self.screen.blit(msg, (BOARD_PIXEL_SIZE // 2 - msg.get_width() // 2, BOARD_PIXEL_SIZE + 50))
+            msg = self.font.render(self.status_message, True, COLORS["ui_text"])
+            self.screen.blit(msg, (BOARD_PIXEL_SIZE // 2 - msg.get_width() // 2, BOARD_PIXEL_SIZE + 115))
 
         if self.controller.game_over():
             overlay = pygame.Surface((800,700), pygame.SRCALPHA)
@@ -105,22 +140,32 @@ class GameScreen:
         wall_text = self.font.render("Place Wall", True, (255, 255, 255))
         self.screen.blit(wall_text, wall_text.get_rect(center=self.btn_wall.center))
 
+        # Undo/Redo buttons
+        pygame.draw.rect(self.screen, (60, 60, 60), self.btn_undo, border_radius=5)
+        undo_text = self.font.render("Undo", True, (255, 255, 255))
+        self.screen.blit(undo_text, undo_text.get_rect(center=self.btn_undo.center))
+
+        pygame.draw.rect(self.screen, (60, 60, 60), self.btn_redo, border_radius=5)
+        redo_text = self.font.render("Redo", True, (255, 255, 255))
+        self.screen.blit(redo_text, redo_text.get_rect(center=self.btn_redo.center))
+
     def draw_walls(self):
         for wall in self.board.get_placed_walls():
             r = wall.top_left.row 
             c = wall.top_left.col
             if wall.orientation == WallOrientation.HORIZONTAL:
-                x = c * CELL_SIZE
+                x = c * CELL_SIZE + 2
                 y = r * CELL_SIZE + CELL_SIZE - WALL_THICKNESS // 2
-                width = CELL_SIZE * 2
+                width = CELL_SIZE * 2 - 4
                 height = WALL_THICKNESS
             else: #vertical wall
                 x = c * CELL_SIZE + CELL_SIZE - WALL_THICKNESS // 2
-                y = r * CELL_SIZE
+                y = r * CELL_SIZE + 2
                 width = WALL_THICKNESS
-                height = CELL_SIZE * 2
+                height = CELL_SIZE * 2 - 4
+            
             rect = pygame.Rect(x, y, width, height)
-            pygame.draw.rect(self.screen, COLORS["wall"], rect, border_radius=3)
+            pygame.draw.rect(self.screen, COLORS["wall"], rect, border_radius=2)
     
     def get_wall_from_mouse(self, mouse_pos):
         mx, my = mouse_pos #pixel coordinates of mouse click
@@ -189,6 +234,24 @@ class GameScreen:
             self.status_message = "Hover near a cell edge and click to place wall"
             return
         
+        if self.btn_undo.collidepoint(mouse_pos):
+            if self.controller.undo():
+                self.status_message = "Move undone"
+            else:
+                self.status_message = "Cannot undo (no history or charges)"
+            self.selected = False
+            self.valid_moves = []
+            return
+
+        if self.btn_redo.collidepoint(mouse_pos):
+            if self.controller.redo():
+                self.status_message = "Move redone"
+            else:
+                self.status_message = "Nothing to redo"
+            self.selected = False
+            self.valid_moves = []
+            return
+        
         if self.mode == "wall":
             wall = self.get_wall_from_mouse(mouse_pos)
             if wall is None:
@@ -254,31 +317,3 @@ class GameScreen:
             row = y // CELL_SIZE
             return int(row), int(col)
         return None
-
-if __name__ == "__main__":
-    pygame.init()
-    screen = pygame.display.set_mode((800, 700))
-    pygame.display.set_caption("Quoridor")
-    game_screen = GameScreen(screen)
-    clock = pygame.time.Clock()
-
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            game_screen.handle_event(event)
-            
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    game_screen.controller = GameController()
-                    game_screen.board = game_screen.controller.board
-                    game_screen.selected = False
-                    game_screen.valid_moves = []
-                    game_screen.status_message = "Game Restarted"
-                    game_screen.mode = "move"
-
-        game_screen.draw()
-        clock.tick(60)
-
-    pygame.quit()

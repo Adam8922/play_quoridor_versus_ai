@@ -60,6 +60,12 @@ class Board:
         
         self._p1_walls = self.INITIAL_WALLS
         self._p2_walls = self.INITIAL_WALLS
+
+        self.p1_undo_count = 3
+        self.p2_undo_count = 3
+
+        self.p1_redo = []
+        self.p2_redo = []
         
         # History
         self._placed_walls = []
@@ -95,6 +101,10 @@ class Board:
             self._p1_pos = new_pos
         else:
             self._p2_pos = new_pos
+
+        # Clear redo history on new move
+        self.p1_redo.clear()
+        self.p2_redo.clear()
 
         # --- PHASE 3: Commit to Ledger ---
         new_move = GameMove(
@@ -140,6 +150,10 @@ class Board:
 
         self._placed_walls.append(wall)
         
+        # Clear redo history on new move
+        self.p1_redo.clear()
+        self.p2_redo.clear()
+
         new_move = GameMove(player=player, move_type=MoveType.WALL_PLACEMENT, placed_wall=wall)
         self._move_history.append(new_move)
 
@@ -147,16 +161,28 @@ class Board:
     def undo_last_move(self) -> bool:
         """
         Reverses the most recent move made in the game.
-        Returns True if a move was undone, False if the history is empty.
+        Returns True if a move was undone, False if the history is empty or no charges left.
         """
         # 1. Is there actually anything to undo?
         if not self._move_history:
             return False
 
-        # 2. Grab the most recent move from the top of the stack
-        last_move = self._move_history.pop()
+        last_move = self._move_history[-1] # Peek at the move
 
-        # 3. Time-Travel Logic based on the move type
+        # 2. Undo Count Validation for the player who made the move
+        if last_move.player == PlayerId.PLAYER_1:
+            if self.p1_undo_count <= 0: return False
+            self.p1_undo_count -= 1
+            self.p1_redo.append(last_move)
+        else:
+            if self.p2_undo_count <= 0: return False
+            self.p2_undo_count -= 1
+            self.p2_redo.append(last_move)
+
+        # 3. Pop the move from history
+        self._move_history.pop()
+
+        # 4. Time-Travel Logic based on the move type
         if last_move.move_type == MoveType.WALL_PLACEMENT:
             # A. Erase the wall from the engine's raw memory matrices
             self._remove_wall_edges(last_move.placed_wall)
@@ -169,8 +195,6 @@ class Board:
                 
             # C. Remove the wall from the UI's drawing list
             if self._placed_walls:
-                # Note: Because the game history is a strict chronological stack (LIFO), 
-                # popping the final item safely removes the exact wall associated with this move.
                 self._placed_walls.pop()
 
         elif last_move.move_type == MoveType.PAWN_MOVE:
@@ -180,6 +204,36 @@ class Board:
             else:
                 self._p2_pos = last_move.previous_pawn_pos
 
+        return True
+
+    def redo_last_undo(self, player: PlayerId) -> bool:
+        """
+        Re-applies the most recently undone move for the given player.
+        """
+        redo_stack = self.p1_redo if player == PlayerId.PLAYER_1 else self.p2_redo
+        if not redo_stack:
+            return False
+
+        redo_move = redo_stack.pop()
+
+        if redo_move.move_type == MoveType.PAWN_MOVE:
+            if redo_move.player == PlayerId.PLAYER_1:
+                self._p1_pos = redo_move.new_pawn_pos
+                self.p1_undo_count += 1
+            else:
+                self._p2_pos = redo_move.new_pawn_pos
+                self.p2_undo_count += 1
+        elif redo_move.move_type == MoveType.WALL_PLACEMENT:
+            self._add_wall_edges(redo_move.placed_wall)
+            self._placed_walls.append(redo_move.placed_wall)
+            if redo_move.player == PlayerId.PLAYER_1:
+                self._p1_walls -= 1
+                self.p1_undo_count += 1
+            else:
+                self._p2_walls -= 1
+                self.p2_undo_count += 1
+
+        self._move_history.append(redo_move)
         return True
     def get_valid_pawn_moves(self, player: PlayerId) -> List[Position]:
         """
