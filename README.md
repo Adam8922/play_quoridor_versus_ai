@@ -8,6 +8,7 @@ A modern, Python-based implementation of the classic strategy board game **Quori
   <em>Main Menu: Mode selection with 2 Players, Easy, Medium, and Hard AI options.</em>
 </p>
 
+**Demo Video Link:** [https://youtu.be/example](https://youtu.be/example)
 
 ## Game Description
 
