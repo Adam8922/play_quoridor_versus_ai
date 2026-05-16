@@ -2,13 +2,15 @@
 
 A modern, Python-based implementation of the classic strategy board game **Quoridor**, featuring a sleek UI, local multiplayer, and a challenging AI opponent.
 
+**Demo Video Link:** [https://youtu.be/example](https://youtu.be/example)
+
 <p align="center">
   <img src="./screenshots/main_menu.png" alt="Main Menu" width="600">
   <br>
   <em>Main Menu: Mode selection with 2 Players, Easy, Medium, and Hard AI options.</em>
 </p>
 
-**Demo Video Link:** [https://youtu.be/example](https://youtu.be/example)
+
 
 ## Game Description
 
