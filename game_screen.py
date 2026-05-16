@@ -124,7 +124,7 @@ class GameScreen:
             winner_num= "1" if self.controller.winner() == PlayerId.PLAYER_1 else "2"
             winner_color = COLORS["player1"] if winner_num == "1" else COLORS["player2"]
             winner_text = self.big_font.render(f"Player {winner_num} Wins!", True, winner_color)
-            restart_text = self.font.render("Click R to restart", True, (255, 255, 255))
+            restart_text = self.font.render("Press R or Click to restart", True, (255, 255, 255))
 
             self.screen.blit(winner_text, winner_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))) #center winner text
             self.screen.blit(restart_text, restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))) #center restart text

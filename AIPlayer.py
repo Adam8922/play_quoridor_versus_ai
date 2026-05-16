@@ -171,11 +171,14 @@ class AIPlayer:
         alpha = float("-inf")
         beta  = float("inf")
 
-        for move in self._candidate_moves(board, player, max_walls=20):
-            child = copy.deepcopy(board)
-            self._apply_move(child, player, move)
-            score = self._minimax(child, depth=3, is_max=False,
+        # Create one working copy of the board to explore state space fast
+        working_board = copy.deepcopy(board)
+
+        for move in self._candidate_moves(working_board, player, max_walls=20):
+            undo_data = self._apply_move(working_board, player, move)
+            score = self._minimax(working_board, depth=3, is_max=False,
                                   ai_player=player, alpha=alpha, beta=beta)
+            self._undo_move(working_board, player, move, undo_data)
             if score > best_score:
                 best_score = score
                 best_move  = move
@@ -194,16 +197,16 @@ class AIPlayer:
         if depth == 0:
             return self._evaluate(board, ai_player)
 
-        moves = self._candidate_moves(board, current_player)
+        moves = self._candidate_moves(board, current_player, max_walls=10)
         if not moves:
             return self._evaluate(board, ai_player)
 
         if is_max:
             best = float("-inf")
             for move in moves:
-                child = copy.deepcopy(board)
-                self._apply_move(child, current_player, move)
-                val = self._minimax(child, depth - 1, False, ai_player, alpha, beta)
+                undo_data = self._apply_move(board, current_player, move)
+                val = self._minimax(board, depth - 1, False, ai_player, alpha, beta)
+                self._undo_move(board, current_player, move, undo_data)
                 best  = max(best, val)
                 alpha = max(alpha, best)
                 if beta <= alpha:
@@ -212,9 +215,9 @@ class AIPlayer:
         else:
             best = float("inf")
             for move in moves:
-                child = copy.deepcopy(board)
-                self._apply_move(child, current_player, move)
-                val = self._minimax(child, depth - 1, True, ai_player, alpha, beta)
+                undo_data = self._apply_move(board, current_player, move)
+                val = self._minimax(board, depth - 1, True, ai_player, alpha, beta)
+                self._undo_move(board, current_player, move, undo_data)
                 best = min(best, val)
                 beta = min(beta, best)
                 if beta <= alpha:
@@ -271,8 +274,8 @@ class AIPlayer:
             # score each wall by how much it lengthens opponent path
             opp_path_len = len(self.get_shortest_path_with_pawns(board, opponent))
             scored = []
-            # Increase heuristic check to 50 walls to find better options
-            for wall in valid_walls[:50]:  
+            # Check up to 40 walls for heuristic to keep it very hard
+            for wall in valid_walls[:min(40, max_walls * 2)]:  
                 board._add_wall_edges(wall)
                 new_opp = self.get_shortest_path_with_pawns(board, opponent)
                 board._remove_wall_edges(wall)
@@ -371,9 +374,30 @@ class AIPlayer:
         return PlayerId.PLAYER_2 if player == PlayerId.PLAYER_1 else PlayerId.PLAYER_1
 
     @staticmethod
-    def _apply_move(board: Board, player: PlayerId, move) -> None:
+    def _apply_move(board: Board, player: PlayerId, move):
         move_type, action = move
         if move_type == "move":
+            old_pos = board.get_player_position(player)
             board.move_pawn(player, action)
+            return old_pos
         else:
             board.place_wall(player, action)
+            return None
+
+    @staticmethod
+    def _undo_move(board: Board, player: PlayerId, move, undo_data) -> None:
+        move_type, action = move
+        if move_type == "move":
+            if player == PlayerId.PLAYER_1:
+                board._p1_pos = undo_data
+            else:
+                board._p2_pos = undo_data
+            board._move_history.pop()
+        else:
+            board._remove_wall_edges(action)
+            if player == PlayerId.PLAYER_1:
+                board._p1_walls += 1
+            else:
+                board._p2_walls += 1
+            board._placed_walls.pop()
+            board._move_history.pop()

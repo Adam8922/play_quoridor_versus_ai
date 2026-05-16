@@ -35,6 +35,11 @@ while running:
                     game_screen = None
                     current_screen = "menu"
                     continue
+            elif event.type == pygame.MOUSEBUTTONDOWN and game_screen.controller.game_over():
+                menu = MenuScreen(screen)
+                game_screen = None
+                current_screen = "menu"
+                continue
             game_screen.handle_event(event) #pass event to game screen for processing
 
     # draw the current screen
