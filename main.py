@@ -28,14 +28,10 @@ while running:
                 current_screen = "game"
 
         elif current_screen == "game":
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r: #reset game when R pressed
-                    # go back to menu instead of restarting directly
-                    menu = MenuScreen(screen)
-                    game_screen = None
-                    current_screen = "menu"
-                    continue
-            elif event.type == pygame.MOUSEBUTTONDOWN and game_screen.controller.game_over():
+            is_reset_key = event.type == pygame.KEYDOWN and event.key == pygame.K_r
+            is_click_to_restart = event.type == pygame.MOUSEBUTTONDOWN and game_screen.controller.game_over()
+
+            if is_reset_key or is_click_to_restart:
                 menu = MenuScreen(screen)
                 game_screen = None
                 current_screen = "menu"

@@ -201,28 +201,23 @@ class AIPlayer:
         if not moves:
             return self._evaluate(board, ai_player)
 
-        if is_max:
-            best = float("-inf")
-            for move in moves:
-                undo_data = self._apply_move(board, current_player, move)
-                val = self._minimax(board, depth - 1, False, ai_player, alpha, beta)
-                self._undo_move(board, current_player, move, undo_data)
-                best  = max(best, val)
+        best = float("-inf") if is_max else float("inf")
+        compare = max if is_max else min
+
+        for move in moves:
+            undo_data = self._apply_move(board, current_player, move)
+            val = self._minimax(board, depth - 1, not is_max, ai_player, alpha, beta)
+            self._undo_move(board, current_player, move, undo_data)
+            
+            best = compare(best, val)
+            if is_max:
                 alpha = max(alpha, best)
-                if beta <= alpha:
-                    break
-            return best
-        else:
-            best = float("inf")
-            for move in moves:
-                undo_data = self._apply_move(board, current_player, move)
-                val = self._minimax(board, depth - 1, True, ai_player, alpha, beta)
-                self._undo_move(board, current_player, move, undo_data)
-                best = min(best, val)
+            else:
                 beta = min(beta, best)
-                if beta <= alpha:
-                    break
-            return best
+
+            if beta <= alpha:
+                break
+        return best
 
     # =========================================================================
     # Evaluation

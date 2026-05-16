@@ -83,6 +83,12 @@ class Board:
         # And remember our brilliant "Top-Left Peg" logic to prevent crosses!
         # There are exactly 8x8 pegs on the board.
         self._crosses_blocked = [[False for _ in range(self.BOARD_SIZE - 1)] for _ in range(self.BOARD_SIZE - 1)]
+    def _commit_move(self, move: GameMove):
+        """Clears redo history and adds the move to the ledger."""
+        self.p1_redo.clear()
+        self.p2_redo.clear()
+        self._move_history.append(move)
+
     # --- State Modifiers (System Calls) ---
     def move_pawn(self, player: PlayerId, new_pos: Position) -> MoveResult:
         """
@@ -102,10 +108,6 @@ class Board:
         else:
             self._p2_pos = new_pos
 
-        # Clear redo history on new move
-        self.p1_redo.clear()
-        self.p2_redo.clear()
-
         # --- PHASE 3: Commit to Ledger ---
         new_move = GameMove(
             player=player, 
@@ -113,7 +115,7 @@ class Board:
             previous_pawn_pos=start_pos,
             new_pawn_pos=new_pos
         )
-        self._move_history.append(new_move)
+        self._commit_move(new_move)
 
         # --- PHASE 4: Win Condition Evaluation ---
         # Did this legal move land them on the finish line?
@@ -150,12 +152,8 @@ class Board:
 
         self._placed_walls.append(wall)
         
-        # Clear redo history on new move
-        self.p1_redo.clear()
-        self.p2_redo.clear()
-
         new_move = GameMove(player=player, move_type=MoveType.WALL_PLACEMENT, placed_wall=wall)
-        self._move_history.append(new_move)
+        self._commit_move(new_move)
 
         return MoveResult.SUCCESS
     def undo_last_move(self) -> bool:

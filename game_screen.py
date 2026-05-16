@@ -129,25 +129,22 @@ class GameScreen:
             self.screen.blit(winner_text, winner_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))) #center winner text
             self.screen.blit(restart_text, restart_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 20))) #center restart text
 
-    def draw_mode_buttons(self):
-        move_color = (80,160,80) if self.mode == "move" else (60,60,60) #switch color bet green and gray
-        pygame.draw.rect(self.screen, move_color, self.btn_move, border_radius=5)
-        move_text = self.font.render("Move Pawn", True, (255, 255, 255)) 
-        self.screen.blit(move_text, move_text.get_rect(center=self.btn_move.center))
+    def _draw_button(self, rect, text, color):
+        """Helper to draw a styled button with centered text."""
+        pygame.draw.rect(self.screen, color, rect, border_radius=5)
+        text_surf = self.font.render(text, True, (255, 255, 255))
+        self.screen.blit(text_surf, text_surf.get_rect(center=rect.center))
 
-        wall_color = (160, 100,40) if self.mode == "wall" else (60, 60, 60) #switch color bet orange and gray
-        pygame.draw.rect(self.screen, wall_color, self.btn_wall, border_radius=5)
-        wall_text = self.font.render("Place Wall", True, (255, 255, 255))
-        self.screen.blit(wall_text, wall_text.get_rect(center=self.btn_wall.center))
+    def draw_mode_buttons(self):
+        move_color = (80, 160, 80) if self.mode == "move" else (60, 60, 60)
+        self._draw_button(self.btn_move, "Move Pawn", move_color)
+
+        wall_color = (160, 100, 40) if self.mode == "wall" else (60, 60, 60)
+        self._draw_button(self.btn_wall, "Place Wall", wall_color)
 
         # Undo/Redo buttons
-        pygame.draw.rect(self.screen, (60, 60, 60), self.btn_undo, border_radius=5)
-        undo_text = self.font.render("Undo", True, (255, 255, 255))
-        self.screen.blit(undo_text, undo_text.get_rect(center=self.btn_undo.center))
-
-        pygame.draw.rect(self.screen, (60, 60, 60), self.btn_redo, border_radius=5)
-        redo_text = self.font.render("Redo", True, (255, 255, 255))
-        self.screen.blit(redo_text, redo_text.get_rect(center=self.btn_redo.center))
+        self._draw_button(self.btn_undo, "Undo", (60, 60, 60))
+        self._draw_button(self.btn_redo, "Redo", (60, 60, 60))
 
     def draw_walls(self):
         for wall in self.board.get_placed_walls():
