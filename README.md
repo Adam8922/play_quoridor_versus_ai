@@ -2,7 +2,7 @@
 
 A modern, Python-based implementation of the classic strategy board game **Quoridor**, featuring a sleek UI, local multiplayer, and a challenging AI opponent.
 
-**Demo Video Link:** [https://youtu.be/example](https://youtu.be/example)
+**Demo Video Link:** [https://drive.google.com/drive/folders/1hJG4wIEBOWpDmvUi0zTU4cX_s7b8V1Mp?usp=drive_link](https://drive.google.com/drive/folders/1hJG4wIEBOWpDmvUi0zTU4cX_s7b8V1Mp?usp=drive_link)
 
 <p align="center">
   <img src="./screenshots/main_menu.png" alt="Main Menu" width="600">
@@ -22,8 +22,11 @@ However, the path is never clear. On each turn, you must choose between:
 
 **The catch?** You have a limited number of walls, and you can never completely block an opponent—there must always be at least one valid path to their goal!
 
-![Gameplay Overview](./screenshots/overview.png)
-*Gameplay Overview: The 9x9 dark-themed board with blue and red pawns and golden walls.*
+<p align="center">
+  <img src="./screenshots/overview.png" alt="Gameplay Overview" width="600">
+  <br>
+  <em>Gameplay Overview: The 9x9 dark-themed board with blue and red pawns and golden walls.</em>
+</p>
 
 
 
@@ -55,8 +58,11 @@ python main.py
 
 The game is designed with a "Clean UI" philosophy, using a mouse-driven interface with keyboard shortcuts for quick actions.
 
-![Wall Placement Preview](./screenshots/wall_placement.png)
-*Wall Placement Preview: Demonstrating the translucent golden preview when hovering over a cell edge.*
+<p align="center">
+  <img src="./screenshots/wall_placement.png" alt="Wall Placement Preview" width="600">
+  <br>
+  <em>Wall Placement Preview: Demonstrating the translucent golden preview when hovering over a cell edge.</em>
+</p>
 
 
 ### General Navigation
@@ -94,6 +100,9 @@ Toggle between these two modes using the buttons on the right sidebar:
 - `menu_screen.py`: Initial mode selection screen.
 - `Constants.py`: Color palettes and board configurations.
 
-![Victory Screen](./screenshots/victory_screen.png)
-*Victory Screen: The semi-transparent victory overlay when a player wins.*
+<p align="center">
+  <img src="./screenshots/victory_screen.png" alt="Victory Screen" width="600">
+  <br>
+  <em>Victory Screen: The semi-transparent victory overlay when a player wins.</em>
+</p>
 
