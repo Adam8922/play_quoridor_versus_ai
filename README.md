@@ -58,7 +58,8 @@ The game is designed with a "Clean UI" philosophy, using a mouse-driven interfac
 
 ### General Navigation
 - **Mouse Click**: Select menu options, buttons, and board positions.
-- **'R' Key**: Reset the game at any time and return to the main menu.
+- **'R' Key**: Reset the game at any time and return to the main menu. 
+- **Click to Restart**: When the game is over, you can click anywhere on the screen to return to the menu.
 
 ### Gameplay Modes
 Toggle between these two modes using the buttons on the right sidebar:
@@ -80,7 +81,7 @@ Toggle between these two modes using the buttons on the right sidebar:
 - **AI Opponent**: Choose from three difficulty levels:
   - **Easy**: Makes random legal moves.
   - **Medium**: Uses basic pathfinding to reach the goal.
-  - **Hard**: Employs advanced minimax/BFS logic to block you efficiently while finding its own shortest path.
+  - **Hard**: Employs an optimized minimax algorithm with BFS-based move ordering to provide a high challenge with fast response times.
 
 ## Project Structure
 - `main.py`: Entry point of the application.
