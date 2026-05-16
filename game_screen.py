@@ -209,15 +209,21 @@ class GameScreen:
         
     
     def handle_event(self, event):
+        # Ignore input if it's AI's turn or AI is thinking
+        is_ai = self.controller.is_ai_turn() or self.ai_thinking
+        
         if event.type == pygame.MOUSEBUTTONDOWN:
-            self.handle_click(event.pos) #pass position of click to handle_click method
+            if not is_ai:
+                self.handle_click(event.pos)
         elif event.type == pygame.MOUSEMOTION:
-            if self.mode == "wall":
-                self.wall_preview = self.get_wall_from_mouse(event.pos) #update wall preview based on mouse position
+            if self.mode == "wall" and not is_ai:
+                self.wall_preview = self.get_wall_from_mouse(event.pos)
+            else:
+                self.wall_preview = None
     
     def handle_click(self, mouse_pos):
-        if self.controller.game_over():
-            return #ignore clicks if game ended
+        if self.controller.game_over() or self.controller.is_ai_turn() or self.ai_thinking:
+            return #ignore clicks if game ended or it's AI's turn
         
         if self.btn_move.collidepoint(mouse_pos):
             self.mode = "move"
